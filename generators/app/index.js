@@ -1,12 +1,21 @@
 'use strict';
+
 var path = require('path');
 var yeoman = require('yeoman-generator');
 var chalk = require('chalk');
 var yosay = require('yosay');
 var _ = require('lodash');
 var mkdirp = require('mkdirp');
+var askName = require('inquirer-npm-name');
+var extend = require('deep-extend');
+
 
 module.exports = yeoman.Base.extend({
+
+    initializing: function() {
+        this.props = {};
+    },
+
     prompting: function () {
         // Have Yeoman greet the user.
         this.log(yosay(
@@ -26,6 +35,20 @@ module.exports = yeoman.Base.extend({
         }.bind(this));
     },
 
+    defaults: function() {
+        this.composeWith('node:app', {
+            options: {
+                babel: false,
+                boilerplate: false,
+                gulp: false,
+                name: this.props.name,
+                skipInstall: this.options.skipInstall
+            }
+        }, {
+            local: require('generator-node').app
+        });
+    },
+
     writing: function () {
         var pkg = this.fs.readJSON(this.destinationPath('package.json'), {});
         extend(pkg, {
@@ -37,7 +60,12 @@ module.exports = yeoman.Base.extend({
             },
             "devDependencies": {
                 "source-map-loader": "^0.1.5",
-                "ts-loader": "^1.2.2"
+                "ts-loader": "^1.2.2",
+                "webpack": "^1.13.3",
+                "webpack-dev-server": "^1.16.2"
+            },
+            "scripts": {
+                "start": "webpack-dev-server --inline"
             }
         });
         pkg.keywords = pkg.keywords || [];
@@ -53,14 +81,14 @@ module.exports = yeoman.Base.extend({
                 'index.html',
                 'tsconfig.json',
                 'webpack.config.js',
-                'src/index.tsx'
+                'src/index.tsx',
             ], function(f) {
                 this.fs.copy(this.templatePath(f), this.destinationPath(f));
-            }
+            }.bind(this)
         );
     },
 
     install: function () {
-        this.installDependencies();
+        this.npmInstall(null, {'only': 'production'});
     }
 });
